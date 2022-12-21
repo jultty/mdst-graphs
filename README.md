@@ -4,7 +4,7 @@
 
 Projeto final de Análise de Dados sobre as relações semânticas entre os termos do dataset  _[Multilingual Data Stewardship Terminology](https://dspace-clarin-it.ilc.cnr.it/repository/xmlui/handle/20.500.11752/ILC-567)_, um conjunto de definições ligadas à ideia de _gestão_ ou _administração_ de dados.
 
-Realizada como estudo de caso para a conclusão do Certificado Profissional de Análise de Dados do Google.
+Realizado como estudo de caso para a conclusão do Certificado Profissional de Análise de Dados do Google.
 
 Ao longo do projeto são exploradas três bibliotecas de visualização de grafos com diferentes estruturas de dados.
 
