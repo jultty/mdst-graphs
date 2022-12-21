@@ -1,14 +1,16 @@
 ## mdst-graphs
 
-Análise de um dataset de terminologia de dados.
+[![Actions Status](https://github.com/jultty/mdst-graphs/actions/workflows/publish.yml/badge.svg)](https://github.com/jultty/semtec-api/actions/workflows/maven.yml) [![Netlify Status](https://api.netlify.com/api/v1/badges/ea164d11-b402-4475-ba75-8bc0e5ca9e78/deploy-status)](https://app.netlify.com/sites/mdst-graphs/deploys) 
+
+Projeto final de Análise de Dados sobre as relações semânticas entre os termos do dataset  _[Multilingual Data Stewardship Terminology](https://dspace-clarin-it.ilc.cnr.it/repository/xmlui/handle/20.500.11752/ILC-567)_, um conjunto de definições ligadas à ideia de _gestão_ ou _administração_ de dados.
 
 Realizada como estudo de caso para a conclusão do Certificado Profissional de Análise de Dados do Google.
 
 Ao longo do projeto são exploradas três bibliotecas de visualização de grafos com diferentes estruturas de dados.
 
-O dataset utilizado foi o _[SSHOC Multilingual Data Stewardship Terminology](https://dspace-clarin-it.ilc.cnr.it/repository/xmlui/handle/20.500.11752/ILC-567)_, um conjunto de definições ligadas à ideia de _Data Stewardship_, que pode ser traduzida como _gestão_ ou _administração de dados_.
 
-* Ferramentas:
+
+* **Ferramentas**:
   * [R](https://www.r-project.org/)
   * [Quarto](https://quarto.org/)
   * [Tidyverse](https://www.tidyverse.org/)
