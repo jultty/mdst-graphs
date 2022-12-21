@@ -1,0 +1,9 @@
+.pagedtable-wrapper {
+    margin-top: 15px;
+    margin-bottom: 30px;
+}
+
+/* bootstrap upstream */
+.badge-success {
+      background-color: rgba(25, 135, 84, 1);
+}
