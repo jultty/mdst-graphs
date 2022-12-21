@@ -1,0 +1,6 @@
+*.un~
+*.swp
+/mdst_graphs_cache/
+/_extensions/
+/_site/
+/.quarto/

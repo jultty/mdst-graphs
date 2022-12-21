@@ -1,0 +1,13 @@
+project:
+  type: website
+  render:
+    - "*.qmd"
+    - "!data/"
+website:
+  favicon: assets/grafo.ico
+  open-graph: true
+theme:
+  light: litera
+  dark: darkly
+execute:
+  freeze: auto

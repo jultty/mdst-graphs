@@ -1,0 +1,2233 @@
+---
+title: "Grafos e relações semânticas na linguagem natural"
+author: "Juno Takano"
+subtitle: "Análise de um dataset de terminologia de dados explorando três bibliotecas de visualização"
+date: last-modified
+lang: pt
+language:
+  title-block-author-single: "Por"
+  title-block-published: "Última atualização"
+filters:
+   - lightbox
+format:
+  html:
+    css: estilo.css
+    df-print: paged
+    theme: litera
+    toc: true
+    toc-depth: 5
+    code-tools: 
+      source: https://github.com/jultty/mdst-graphs
+    code-block-bg: true
+    code-block-border-left: "#31BAE9"
+execute: 
+  cache: true
+---
+
+![Visão geral das relações entre os termos do _Multilingual Data Stewardship Terminology_](assets/out/prototipo_cluster-principal_grande.svg){.lightbox}
+
+## Introdução
+
+O universo do desenvolvimento de software é saturado de termos carregados de importância mas com vidas muito curtas, ou onde é difícil enxergar a diferença entre relevância e ruído. Isso impacta decisões --- pessoais ou institucionais --- sobre onde investir recursos ao aprender, pesquisar e ensinar tecnologias.
+
+Como conseguir analisar e representar visualmente a relevância de elementos de uma amostra que muda tão rapidamente? E será que ela muda tão rapidamente? Onde é a superfície e onde está o espaço mais profundo desses campos semânticos?
+
+Sem intenção de dar uma resposta definitiva mas com interesse em explorar ferramentas, optei por uma perspectiva iterativa e que pudesse ser facilmente documentada e reproduzida.
+
+Para isso, escolhi como ferramenta principal a [linguagem R](https://www.r-project.org/) e o sistema de publicação [Quarto](https://quarto.org/). Dessa maneira, foi possível usar um só ambiente para fazer a importação, limpeza, análise, visualização e ainda a exportação desse processo para uma página web apresentável.
+
+O dataset utilizado foi o _[SSHOC Multilingual Data Stewardship Terminology](https://dspace-clarin-it.ilc.cnr.it/repository/xmlui/handle/20.500.11752/ILC-567)_, um conjunto de definições ligadas à ideia de _Data Stewardship_, que pode ser traduzida como _gestão_ ou _administração de dados_.
+
+O conjunto é resultado do trabalho de Francesca Frontini, Federica Gamba, Monica Monachini e Daan Broeder do [Instituto de Linguística Computacional A. Zampolli](http://www.ilc.cnr.it/), pelo [Conselho Nacional de Pesquisa da Itália]() e traz 211 termos nos idiomas inglês, holandês, francês, alemão, italiano, grego e esloveno.
+
+Entre os termos mais relevantes, segundo as métricas desenvolvidas, destacaram-se (em tradução livre) **metadado**, **conjunto de dados**, **dados de pesquisa**, **sujeito de dados**, **dados pessoais** e **dados brutos**. Continue lendo se deseja saber mais sobre os resultados do estudo.
+
+### Atalho
+
+Abaixo você encontra um relatório técnico detalhado, com todo o código executado para processar e analisar o conjunto de dados.
+
+Se prefere ler somente as conclusões resumidas e acionáveis, [salte para o final](#agir). Se quiser ver apenas as visualizações mais relevantes, pode começar pela [categorização](#categorização) ou ir diretamente para a [seção 5](#compartilhar).
+
+## 1. Perguntar
+
+::: {.panel-tabset}
+
+### Resumo
+
+| | |
+|-|-|
+| **Objetivo** | Representar visualmente as relações entre diferentes termos técnicos da área de dados |
+| **Problema** | Determinar quais termos são mais relevantes |
+| **Métricas** | Menções de cada termo por um termo diferente do dataset |
+| **Público**  | Profissionais de [PLN](https://www.oracle.com/br/artificial-intelligence/what-is-natural-language-processing/), pessoas treinadoras, produtoras de materiais e estudantes da área de dados |
+| **Dados** | [SSHOC Multilingual Data Stewardship Terminology](https://dspace-clarin-it.ilc.cnr.it/repository/xmlui/handle/20.500.11752/ILC-567) |
+
+**Conjunto de dados utilizado:**
+
+> Frontini, Francesca; Gamba, Federica; Monachini, Monica and Broeder, Daan, 2021, 
+  SSHOC Multilingual Data Stewardship Terminology, ILC-CNR for CLARIN-IT repository hosted at Institute for Computational Linguistics "A. Zampolli", National Research Council, in Pisa, 
+  <http://hdl.handle.net/20.500.11752/ILC-567>.
+
+### Amostra da pesquisa
+
+#### Resumo de resultados
+
+| **Dataset** | **Observações** |
+|:-----------:|-----------------|
+| [CLSE](https://github.com/google-research-datasets/clse) | Termos genéricos demais |
+| [Re-TACRED](https://arxiv.org/abs/2104.08398) | Dados de treinamento para ML |
+| [DVN_SHL1SL](https://borealisdata.ca/dataset.xhtml?persistentId=doi:10.7939/DVN/SHL1SL) | [Dados relacionais para semantic web]{.badge .badge-success} |
+| ~~[UC11294871](https://digitallibrary.usc.edu/asset-management/2A3BF1LGLIUT?FR_=1&W=1440&H=759)~~ | Não é um dataset |
+| [CrowdTruth](https://zenodo.org/record/1472330) | Estrutura confusa |
+| [Graphine](https://zenodo.org/record/5320310) | Dados médicos |
+| **[SSHOC MDST](https://dspace-clarin-it.ilc.cnr.it/repository/xmlui/handle/20.500.11752/ILC-567)** | [Termos e definições de Data Stewardship]{.badge .badge-success} |
+
+#### Fontes de busca
+
+* [data.world](https://data.world/)
+* [statista](https://www.statista.com/)
+* [aws opendata](https://registry.opendata.aws/)
+* [kaggle](https://www.kaggle.com/datasets)
+* [data.gov](https://data.gov/)
+* [datahub.io](https://datahub.io/collections)
+* [archive.ics.uci.edu](https://archive.ics.uci.edu/ml/datasets.php)
+* [google datasetsearch](https://datasetsearch.research.google.com/)
+  * [SSHOC Multilingual Data Stewardship Terminology](https://dspace-clarin-it.ilc.cnr.it/repository/xmlui/handle/20.500.11752/ILC-567)
+  * [Graphine: A Dataset for Graph-aware Terminology Definition Generation | Zenodo](https://zenodo.org/record/5320310)
+  * [CrowdTruth Corpus for Open Domain Relation Extraction from Sentences | Zenodo](https://zenodo.org/record/1472330)
+  * [University of Southern California - Learning semantic types and relations from text](https://digitallibrary.usc.edu/asset-management/2A3BF1LGLIUT?FR_=1&W=1440&H=759)
+  * [An Annotated Corpus of Webtables for Information Extraction Tasks - UAlberta Research Data Collection](https://borealisdata.ca/dataset.xhtml?persistentId=doi:10.7939/DVN/SHL1SL)
+  * [[2104.08398] Re-TACRED: Addressing Shortcomings of the TACRED Dataset](https://arxiv.org/abs/2104.08398)
+* [research.google](https://research.google/tools/datasets/)
+  * [CLSE: Corpus of Linguistically Significant Entities – Google Research](https://research.google/pubs/pub51837/)
+    * [google-research-datasets/clse - GitHub](https://github.com/google-research-datasets/clse)
+
+:::
+
+Para quantificar a relevância de um termo em relação aos demais, foi usada uma métrica aqui chamada de **popularidade**.
+
+O grafo é uma rede de elementos (chamados também nós ou _nodes_) que estão conectados por ligações (chamadas também de _links_ ou _edges_).
+
+![Exemplo de um grafo simples.](assets/out/prototipo_data-protection.png){fig-alt="Um grafo com oito nós, cada um representado por círculos preenchidos ligados por linhas. Dois nós centrais, com as legendas 'data object' e 'data structure', são representados por um círculo maior. Os demais nós são representados por dois tamanhos de círculos menores de acordo com a quantidade de ligações que recebem: uma ou nenhuma. 'Data description' e 'unstructured data' fazem ligações com 'data structure'. 'non-personal data' e 'data discoverability' fazem ligação com 'data object', que por sua ve faz ligação com 'data structure'. O nó 'data findability' faz ligação com 'data discoverability' e recebe uma ligação de 'findable data'."}
+
+No exemplo de grafo acima, o nó _**data structure**_ recebe três ligações e tem portanto um valor de popularidade 3. O nó **data object**, por sua vez, recebe apenas duas ligações e tem popularidade 2.
+
+Trata-se da quantidade de vezes que um determinado nó (cada elemento da rede de conexões) recebe uma conexão. Para esse estudo, uma conexão representa uma menção daquele termo na definição de outro.
+
+Por exemplo, vemos abaixo a definição de _data security_:
+
+> "Result of the **data protection** measures taken to guarantee **data integrity**."
+
+Ao mencionar tanto _data protection_ quanto _data integrity_, as relações são estabelecidas através do mapeamento feito usando as ferramentas da linguagem R.
+
+Para esse estudo, não foram considerados termos no plural nem suas diferentes formas decompostas, apenas as junções exatas do termo. Contudo, foram levadas em conta todos os termos alternativos do conjunto de dados, na forma das AltLabels. 
+
+Isso significa que um termo pode ter mais de um nome, como por exemplo ocorre com o termo _data publication_. Ele tem as AltLabels _data publishing_ e _publication of data_. Qualquer uma delas, se mencionada na definição de outro termo, estabelece uma relação.
+
+Para grifar essa diferença, ao longo do estudo foram utilizadas diferentes cores ou formatos de linha para representar as diferentes relações entre cada termo.
+
+## 2. Preparar
+
+Nesta etapa, os dados são carregados e preparados para o processamento.
+
+O arquivo de dados original é disponibilizado no formato **csv** e tem uma estrutura de dados longa. Isso significa que um mesmo ID se repete em diferentes linhas. Será preciso converter essa estrutura para uma forma _ampla_ para que os dados possam ser manipulados e plotados.
+
+A preparação envolve ainda observar a confiabilidade dos dados. No conjunto original é possível ver que há múltiplas fontes possíveis para os dados. Na [demo oficial do projeto](https://vocabs.sshopencloud.eu/vocabularies/sshocterm/en/) também é possível ver o cruzamento das informações em um formato mais legível.
+
+Os dados não possuem dados pessoais para serem anonimizados e usa a licença pública [Creative Commons - Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
+
+### Carregamento
+
+Para começar a trabalhar de fato com os dados, começamos carregando as bibliotecas que serão usadas na etapa de limpeza:
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+Usaremos a sigla **MDST** para nos referimos ao dataset. Ela representa o seu nome completo, Multilingual Data Stewardship Terminology.
+
+```{r importa os dados}
+mdst <- read_delim("data/SSHOC/terminology.csv", delim=";")
+```
+
+Pela saída da importação podemos ver que os nomes originais das colunas, por estarem distribuídos em duas linhas, não podem ser lidos automaticamente.
+
+Antes de prosseguir podemos verificar por problemas na importação:
+
+```{r}
+problems(mdst)
+```
+
+E verificar os tipos de dados:
+
+```{r}
+spec(mdst)
+```
+
+Todas as variáveis são do tipo character.
+
+Vamos converter para um dataframe:
+
+```{r}
+mdst = data.frame(mdst)
+```
+
+E agora temos o conjunto carregado:
+
+```{r}
+mdst %>% 
+  filter(
+    grepl("data stewardship", ...3, ignore.case = TRUE)
+  )
+```
+Acima, vemos uma busca pela definição do conceito de "data stewardship".
+
+> Data stewardship can be defined as the tasks and responsibilities that relate to the management, sharing, and preservation of research data throughout the research lifecycle and beyond.
+
+Em tradução livre:
+
+> Gestão de dados pode ser definida como o conjunto de tarefas e responsabilidades que se relacionam à gestão, compartilhamento, e preservação de dados de pesquisa ao longo do ciclo de pesquisa e além dele.	
+
+## 3. Processar
+
+Com os dados carregados, podemos dar início à limpeza.
+
+Tentando usar o conhecimento obtido ao longo da certificação, optei por utilizar apenas a linguagem R para fazer todo o processo.
+
+Além da limpeza, serão realizados aqui alguns processos de validação para verificar se os dados realmente estão limpos e se não há informações duplicadas ou IDs faltando, já que na etapa de análise será necessário criar métricas que dependem de uma sequência precisa e ininterrupta de IDs.
+
+### Limpeza
+
+#### Cabeçalhos
+
+Os cabeçalhos das colunas vieram em duas colunas separadas, sendo portanto importados incorretamente por padrão.
+
+```{r}
+colnames(mdst)
+```
+
+Vamos renomear as colunas usando a função `clean_names` do pacote _janitor_:
+
+```{r renomeia as colunas}
+mdst_cl <- mdst %>%
+  row_to_names(row_number = 1) %>% 
+  clean_names() %>% 
+  rename(type = na, source = source_of_definition)
+```
+
+Duas colunas precisaram ainda ser nomeadas manualmente.
+
+Agora temos essas colunas:
+
+```{r}
+colnames(mdst_cl)
+```
+
+#### Padronização
+
+Existem valores "AltLabel" e "altLabel" que poderiam ser padronizados para AltLabel:
+
+```{r}
+unique(mdst_cl$type)
+```
+
+Para substituir como "AltLabel":
+
+```{r}
+mdst_cl$type <- str_replace(mdst_cl$type, "altLabel", "AltLabel")
+```
+
+
+E podemos verificar se a quantidade de "altLabel" agora é zero:
+
+```{r}
+mdst_cl %>% 
+  filter(type == "altLabel") %>% 
+  nrow() == 0 # TRUE
+```
+
+
+Vamos testar se não houve erros na substituição somando os valores únicos:
+
+```{r}
+local({
+  lbls <- c("AltLabel" = 0, "altLabel " = 0,
+            "Definition" = 0, "PrefLabel" = 0)
+  
+  for (i in 1:4) {
+    lbls[i] <- lbls[i] + mdst_cl %>% 
+      filter(type == names(lbls)[i]) %>% 
+      nrow()
+  }
+  
+  lbls; sum(lbls) == nrow(mdst_cl) # TRUE
+})
+```
+
+O código acima soma a quantidade de ocorrências de cada uma das quatro palavras. Um resultado `TRUE` significa que o total é igual ao total de linhas no dataframe (atualmente, 489).
+
+Podemos agora separar as colunas usando apenas ID, tipo e descrição para a análise.
+
+```{r}
+mdst_fl <- mdst_cl %>% 
+  select(concept_id, type, term)
+```
+
+Por fim, vamos converter todas as colunas para letras minúsculas, exceto a coluna type:
+
+```{r}
+mdst_fl <- mdst_fl %>%
+  mutate(concept_id = tolower(concept_id)) %>% 
+  mutate(term = tolower(term))
+```
+
+#### Pivoting
+
+A seguir é preciso converter do formato longo para amplo.
+
+Os dados estão estruturados da seguinte forma:
+
+| concept_id | type       | term         |
+|------------|------------|--------------|
+| A          | PrefLabel  | PrefLabel_A  |
+| NA         | Definition | Definition_A |
+| B          | PrefLabel  | PrefLabel_B  |
+| NA         | Definition | Definition_B |
+
+Ou seja, cada ID pode ter informações em mais de uma linha, que são definididas pela coluna "type".
+
+Há ainda casos com três tipos, que incluem uma ou várias AltLabels:
+
+| concept_id | type       | term         |
+|------------|------------|--------------|
+| B          | PrefLabel  | PrefLabel_B  |
+| NA         | Definition | Definition_B |
+| C          | PrefLabel  | PrefLabel_C  |
+| NA         | AltLabel   | AltLabel_C   |
+| NA         | Definition | Definition_C |
+
+Para fazer a conversão em um formato amplo, primeiro vamos [preencher](https://tidyr.tidyverse.org/reference/fill.html) os valores NA da coluna concept_id com o último valor acima de cada NA:
+
+```{r}
+mdst_fl <- mdst_fl %>%
+  fill(names(mdst_fl), .direction = "down")
+```
+
+Agora temos ainda o formato longo, mas os valores nulos (NA) foram preenchidos com os respectivos IDs:
+
+```{r}
+head(mdst_fl, 10)
+```
+
+Não resta nenhum valor NA:
+
+```{r}
+colSums(is.na(mdst_fl))
+```
+
+Agora temos uma estrutura assim:
+
+| concept_id | type       | term         |
+|------------|------------|--------------|
+| B          | PrefLabel  | PrefLabel_B  |
+| B          | Definition | Definition_B |
+| C          | PrefLabel  | PrefLabel_C  |
+| C          | AltLabel   | AltLabel_C   |
+| C          | Definition | Definition_C |
+
+O próximo passo é separar os tipos PrefLabel, Definition e AltLabel em suas próprias colunas.
+
+Podemos fazer isso com a função `pivot_wider`:
+
+```{r pivot_wider}
+mdst_pv <- mdst_fl %>% 
+  pivot_wider(names_from = type, values_from = term, values_fn = list) %>% 
+  mutate(PrefLabel = as.character(PrefLabel)) %>% 
+  unnest_wider(AltLabel, names_sep = "_")
+```
+
+Para que o pivoting com `pivot_wider()` una as linhas com conteúdos diferentes mas categorias iguais (na coluna type) usa-se a instrução `unnest()`, que separa essas linhas novamente. Do contrário, haveria a perda de dados.
+
+Este [post no rdrr.io](https://rdrr.io/github/markfairbanks/tidydt/man/unnest_wider..html) foi essencial para compreender melhor a solução.
+
+O seguinte erro era gerado sem ela:
+
+```
+Warning: Values from `term` are not uniquely identified; output will contain list-cols.
+* Use `values_fn = list` to suppress this warning.
+* Use `values_fn = {summary_fun}` to summarise duplicates.
+* Use the following dplyr code to identify duplicates.
+  {data} %>%
+    dplyr::group_by(concept_id, type) %>%
+    dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
+    dplyr::filter(n > 1L)
+```
+
+O que isso indica é que valores de coluna duplicados são, por padrão, unidos em listas para que não sejam perdidos na hora de juntar as linhas por seus IDs.
+
+Agora vamos converter de volta para um dataframe:
+
+```{r}
+mdst_pv <- data.frame(mdst_pv)
+```
+
+E finalmente temos um único concept_id por observação:
+
+```{r}
+length(unique(mdst_pv$concept_id))== mdst_fl %>% select(concept_id) %>% unique() %>% nrow()
+```
+
+Para ficar mais fácil de entender a tabela, vamos reordenar as colunas:
+
+```{r}
+mdst_pv <- mdst_pv %>% 
+  select(concept_id, PrefLabel, Definition, AltLabel_1, AltLabel_2, AltLabel_3)
+```
+
+#### Deduplicação
+
+Agora que a maioria das partes duplicadas foi removida, é possível focar no restante. Vamos ver quantos itens únicos temos na coluna Definition:
+
+```{r}
+length(unique(mdst_pv$Definition))
+```
+
+209 é muito mais próximo do número de definições mostrado nos metadados, 211.
+
+A quantidade de IDs únicos é 209:
+
+```{r}
+length(unique(mdst_pv$concept_id))
+```
+
+Esse valor é o mesmo antes e depois da mudança para uma estrutura ampla:
+
+```{r}
+length(unique(mdst_pv$concept_id)) == length(unique(mdst_fl$concept_id))
+```
+ 
+Agora vamos contar os valores únicos de cada coluna:
+
+```{r}
+mdst_pv %>%
+  summarize_all(n_distinct) %>% 
+  mutate(AltLabel_total = sum(AltLabel_1, AltLabel_2, AltLabel_3))
+```
+
+Nos metadados do conjunto há a informação de que são 210 conceitos. A [página online](https://vocabs.sshopencloud.eu/vocabularies/sshocterm/en/) informa 211 conceitos. 
+
+Abaixo foi feito um cruzamento dos dados em seu estado atual com os totais exibidos na página do SSHOC:
+
+| **Coluna** | **Original** | **Atual** | **Diferença** |
+|:----------:|:------------:|:---------:|:-------------:|
+| concept_id | 211          | 209       | 2             |
+| PrefLabel  | 211          | 209       | 2             |
+| Definition | 211          | 209       | 2             |
+| AltLabel   | 61           | 73        | -12           |
+
+No nosso data frame atual temos 209 IDs, 209 PrefLabel e 209 definições, todos valores únicos. Faltam dois itens para cada.
+
+O maior problema ainda são as AltLabels. Temos 70 AltLabels, o que significa que temos 12 AltLabels a mais. O que encontramos até agora removeria apenas duas AltLabels, deixando ainda outras 7. É possível que haja mais duplicações entre as colunas que foram separadas.
+
+Se olharmos o último ID, ele é "version_control_211":
+
+```{r}
+tail(mdst_fl, 1)
+```
+
+Observando os dados para tentar entender a diferença entre os 211 IDs e as 209 observações, percebi que o número das linhas não batia com o dos IDs.
+
+Por exemplo, os IDs 170 e 171 são pulados:
+
+```{r}
+mdst_pv[168:173, ]
+```
+
+
+Olhando no conjunto original, eles também não constam:
+
+```{r}
+mdst %>% 
+  mutate(row = row_number()) %>% 
+  filter(...1 == "orphan_data_169") %>% 
+  select(...1, row)
+```
+
+```{r}
+mdst[396:410, ]
+```
+
+Parece não existir uma PrefLabel nem um concept_id para a AltLabel "PID".
+
+Escrevi primeiro um teste que encontra as linhas que não batem com os seus IDs:
+
+Para isso criei uma nova coluna com apenas o número do ID:
+
+```{r}
+mdst_pv <- mdst_pv %>% 
+  mutate(id_no = str_replace(concept_id, "^.*_", "")) %>% 
+  mutate(id_no = as.integer(id_no))
+```
+
+E usei o somatório de 1 a 211 junto com um _loop for_ para verificar se os números estão em sequência e não são duplicados. Isso também facilita encontrar exatamente onde está o erro:
+
+```{r}
+for (i in 1:211) {
+  if (i != mdst_pv$id_no[i]) {
+    print(
+      paste(i, "!=", mdst_pv$id_no[i])
+      )
+    break
+  }
+}
+
+rm(i); paste("Diferença:", sum(1:211) - sum(mdst_pv$id_no))
+```
+
+Isso nos leva de novo à linha 170:
+
+```{r}
+mdst_pv[168:172,]
+```
+
+Aqui parece ter faltado um concept_id para a entrada referente a "PID" e há ainda uma entrada faltando após essa, que seria do ID 171. Isso teve algumas consequências:
+
+* O campo Definition do ID orphan_data_169 ficou com sua própria definição e a de PID juntas
+* "PID" ficou como a AltLabel do ID orphan_data_169.
+
+#### Inserção
+
+Para alterar os dados da coluna Definition --- atualmente do tipo lista devido a essa entrada duplicada --- será preciso tipá-la como character:
+
+```{r}
+mdst_pv <- mdst_pv %>% 
+  mutate(Definition = as.character(Definition))
+```
+
+E agora vamos adicionar o ID `personal_identifier_170` para essa observação e as informações do ID 171 [encontradas na página web do projeto](https://vocabs.sshopencloud.eu/vocabularies/sshocterm/en/page/persistent_identifier_171):
+
+```{r}
+mdst_ad <- mdst_pv %>% 
+  add_row(tibble_row(
+    concept_id = "persistent_identification_170", PrefLabel = "persistent identification", Definition = "the act of identifying a resource via its persistent identifier.", id_no = as.integer(170)), .after = 169) %>% 
+  add_row(tibble_row(
+    concept_id = "persistent_identifier_171", PrefLabel = "persistent identifier", Definition = "a unique and stable denomination (reference) of a digital resource (e.g. research data) through allocation of a code that can be persistently and explicitly referenced on the internet.", AltLabel_1 = "pid", id_no = as.integer(171)), .after = 170) %>% 
+  mutate(id_no = as.integer(id_no))
+```
+
+Conferindo se está tudo certo:
+
+```{r}
+mdst_ad[170:171,]
+```
+
+Agora precisamos retirar a AltLabel e definição extras em orphan_data_169:
+
+```{r}
+mdst_ad[169,] <- tibble_row(concept_id = "orphan_data_169", PrefLabel = "orphan data", Definition = "data that is not machine readable because the data exists with no identifiable computer application or system that can retrieve it, or the data is machine readable but does not have sufficient content, context or structure to render it understandable.", AltLabel_1 = NA, AltLabel_2 = NA, AltLabel_3 = NA, id_no = as.integer(169))
+```
+
+
+Vamos ver como ficou essa área novamente:
+
+```{r}
+mdst_ad[168:172,]
+```
+
+#### Validação
+
+Feitas essas inserções e transformações, podemos executar o teste criado anteriormente para validar que a sequência de IDs agora está correta.
+
+Primeiro vamos reescrever a coluna id_no com os números da coluna concept_id, já que ela foi alterada:
+
+```{r}
+mdst_ad <- mdst_ad  %>% 
+  mutate(id_no = str_replace(concept_id, "^.*_", "")) %>% 
+  mutate(id_no = as.integer(id_no))
+```
+
+E então executar o teste:
+
+```{r}
+for (i in 1:211) {
+  if (i != mdst_ad$id_no[i]) {
+    print(
+      paste("Erro no índice", i, "id_no:", mdst_ad$id_no[i], "ID:", mdst_ad$concept_id)
+      )
+    break
+  }    
+}
+
+rm(i); paste("Diferença:", sum(1:211) - sum(mdst_ad$id_no)) # 0
+```
+
+Com os números dos IDs agora iguais aos números de cada observação, podemos remover a coluna id_no:
+
+```{r}
+mdst_ad <- select(mdst_ad, !id_no)
+```
+
+#### Mais deduplicação
+
+Antes de fazer mais validações, vamos remover qualquer caractere de espaço que esteja sobrando ou duplicado:
+
+```{r}
+mdst_adt <- mdst_ad %>% 
+  mutate_if(is.character, trimws) %>% 
+  mutate_if(is.character, gsub, pattern = "  ", replacement = " ")
+```
+
+Isso parece ter provocado nove alterações no dataframe:
+
+```{r}
+table(mdst_adt == mdst_ad)
+```
+
+Podemos encontrar em qual coluna elas estão com `sapply()`:
+
+```{r}
+as_tibble(mdst_adt == mdst_ad) %>% 
+  sapply(table)
+```
+Sabendo que todos se encontram na coluna Definition, vamos encontrar quais foram elas usando a função `setdiff()`:
+
+```{r}
+setdiff(mdst_adt$Definition, mdst_ad$Definition)
+```
+
+A função retornou apenas oito resultados. Vamos inspecionar mais de perto o resultado anterior achando qual é o concept_id de cada uma das nove linhas encontradas:
+
+```{r}
+mdst_adt_diff <- mdst_ad
+
+mdst_adt_diff$Definition <- (mdst_adt$Definition == mdst_ad$Definition)
+
+mdst_adt_diff %>% 
+  filter(Definition == FALSE) %>% 
+  select(concept_id, Definition)
+```
+
+Vemos aqui que o ID metadata_158 é o único a não ser encontrado na comparação com `setdiff(mdst_adt$Definition, mdst_ad$Definition)`.
+
+Podemos confirmar isso retirando o texto sem espaços extras do texto original e vendo se resta apenas um espaço.
+
+O código a seguir usa a função mutate_all para criar uma tabela que mostra todas as colunas comparadas.
+
+```{r}
+mdst_adc <- mdst_ad %>% 
+  mutate_all(list(~ str_trim(., side = "both"),
+                  ~ str_replace_all(., "  ", " ")))
+```
+
+A função `mutate_all` acima recebe uma lista de funções anônimas como argumento. O símbolo de fórmulas `~` faz com que o código fique mais limpo, evitando ter de declarar as funções como `function ...`. Os pontos servem para capturar os argumentos passados pela `mutate_all` para cada observação do conjunto.
+
+O resultado será um novo dataframe com novas colunas com o nome da função aplicada no final. Teremos portanto uma coluna "concept_id" com os dados originais, outra com "concept_id_str_trim", e outra com "concept_id_replace_all" e assim por diante para todas as colunas.
+
+Esse é nosso conjunto comparando todas as diferenças:
+
+```{r}
+mdst_adc
+```
+
+Com base nesse conjunto, podemos tentar chegar às diferenças exatas entre as strings originais e suas versões limpas:
+
+```{r}
+diff_final <- mdst_adc %>% 
+  mutate(trim_diff = str_replace(Definition, fixed(Definition_str_trim), "")) %>% 
+  mutate(replace_diff = str_replace(Definition, fixed(Definition_str_replace_all), "")) %>% 
+  mutate(bools_diff = mdst_adt_diff$Definition) %>% 
+  filter(bools_diff == FALSE) %>% 
+  select(concept_id, trim_diff, replace_diff)
+```
+
+Através desse resultado podemos saber que cada linha diferente possuía um espaço em branco:
+
+```{r}
+diff_final %>% 
+  filter(trim_diff == " ")
+```
+
+E que não havia espaços duplicados:
+
+```{r}
+diff_final %>% 
+  filter(replace_diff == "")
+```
+
+```{r}
+#| echo: false
+rm(mdst_adt_diff, diff_final)
+```
+
+
+Vamos verificar se há mais itens duplicados agora que retiramos espaços em excesso e desagregamos as listas:
+
+```{r}
+mdst_adt %>%
+  summarize_all(n_distinct) %>% 
+  mutate(AltLabel_total = sum(AltLabel_1, AltLabel_2, AltLabel_3))
+```
+
+Os valores das AltLabels não se alteraram desde a primeira verificação. Os IDs ainda são únicos. Mas parece que ainda há uma definição duplicada.
+
+Vamos encontrá-la criando um teste para achar valores duplicados:
+
+```{r}
+dup_check <- function(df, col) {
+  df %>% 
+  select(all_of(col)) %>% 
+  drop_na() %>% 
+  duplicated() %>% 
+  as_tibble() %>% 
+  mutate(row_no = row_number()) %>% 
+  filter(value == TRUE)
+}
+```
+
+Essa função recebe um dataframe e uma coluna e cria um dataframe booleano com `TRUE` para duplicatas. Ela adiciona uma coluna com o número da linha correspondente e um filtro para retornar apenas os valores duplicados.
+
+Vamos executar o teste na coluna _Definition_:
+
+```{r}
+dup_check(mdst_adt, "Definition")
+```
+
+Ela indica que a linha 171 tem um erro de duplicação. Já trabalhamos nessa linha ao resolver a falta de informações. Essa descrição foi inserida manualmente nessa etapa, e está correta de acordo com o ID persistent_identifier_171.
+
+Vamos então procurar qual é a sua duplicata:
+
+```{r}
+mdst_adt %>% 
+  filter(Definition == mdst_adt[171,]$Definition)
+```
+
+O ID metadata_158 está com a descrição incorreta. Ela é uma duplicação da definição do ID persistent_identifier_171.
+
+Vamos verificar onde esse ID está no conjunto original para encontrar a origem do erro:
+
+```{r}
+mdst %>% 
+  mutate(row_no = row_number()) %>% 
+  filter(...1 == "metadata_158") %>% 
+  select(...1, row_no)
+```
+
+Acessando um recorte dessa linha, vemos que o erro já estava presente desde o dataset original.
+
+```{r}
+mdst[368:380,1:3]
+```
+
+Ao contrário dos erros anteriores, na [página oficial do projeto](https://vocabs.sshopencloud.eu/vocabularies/sshocterm/en/page/metadata_158) a informação também está duplicada. Usaremos como dados de proxy os de uma referência usada no próprio conjunto, a [FRBR-aligned Bibliographic Ontology](http://purl.org/spar/fabio/Metadata).
+
+```{r}
+mdst_adt[158,]$Definition <- "a separate work that provides information describing one or more characteristics of a resource or entity."
+```
+
+Agora sim temos 211 entradas únicas para todas as variáveis:
+
+```{r}
+mdst_adt %>%
+  summarize_all(n_distinct) %>% 
+  mutate(AltLabel_total = sum(AltLabel_1, AltLabel_2, AltLabel_3))
+```
+
+Quanto a duplicações entre as diferentes colunas de AltLabels, testes sucessivos como o demonstrado abaixo foram usados para encontrá-las também:
+
+```{r}
+mdst_adt %>% 
+  filter(AltLabel_1 == AltLabel_2) %>% 
+  select(AltLabel_1, AltLabel_2) 
+```
+
+```{r}
+mdst_adt %>% 
+  filter(AltLabel_2 == AltLabel_3) %>% 
+  select(AltLabel_2, AltLabel_3) 
+```
+
+```{r}
+mdst_adt %>% 
+  filter(AltLabel_1 == AltLabel_3) %>% 
+  select(AltLabel_3, AltLabel_3)
+```
+
+Foi encontrada apenas uma duplicação das AltLabel_1 e AltLabel_2 "raw data". Vamos encontrar a qual ID se referem:
+
+```{r}
+mdst_adt %>% 
+  filter(AltLabel_1 == "raw data")
+```
+
+E portanto remover a AltLabel_2 da linha 181:
+
+```{r}
+mdst_adt[181,]$AltLabel_2 <- NA
+```
+
+
+Totais de duplicações por coluna:
+
+
+```{r verifica duplicações}
+lbls = c("concept_id" = 0, "AltLabel_1" = 0, "AltLabel_2" = 0, "AltLabel_3" = 0)
+
+for (i in 1:4) {
+  lbls[i] <- dup_check(mdst_adt, names(labels)[i]) %>% 
+    nrow()
+}
+
+lbls; rm(lbls, i)
+```
+
+
+### Modelagem
+
+Antes de mapear as relações, precisei entender qual era a estrutura que os dados deveriam usar.
+
+Para isso estudei os exemplos e a documentação da primeira biblioteca, a ggraph, que utiliza alguns princípios da ggplot --- abordados na certificação --- para fazer visualizações de grafos:
+
+* [thomasp85/ggraph: Grammar of Graph Graphics](https://github.com/thomasp85/ggraph)
+* [An Implementation of Grammar of Graphics for Graphs and Networks • ggraph](https://ggraph.data-imaginist.com/index.html)
+
+```{r}
+library(ggplot2)
+library(ggraph)
+library(tidygraph)
+```
+
+Esse é o exemplo mais simples encontrado de um conjunto de dados compatível com a ggraph:
+
+```{r}
+highschool
+```
+
+A documentação mostra como obter uma medida de popularidade:
+
+```{r}
+graph <- as_tbl_graph(highschool) %>% 
+  mutate(Popularity = centrality_degree(mode = "in"))
+```
+
+A estrutura fica dessa forma:
+
+```{r}
+graph
+```
+
+Essa é a visualização do conjunto acima:
+
+```{r}
+#| warning: false
+
+ggraph(graph, layout = "kk") +
+  geom_edge_fan(aes(alpha = after_stat(index)), show.legend = FALSE)
+```
+
+Ela mostra apenas as ligações entre cada nó.
+
+No exemplo abaixo, pontos são usados nos nós para representar a popularidade:
+
+```{r}
+ggraph(graph, layout = "kk") +
+  geom_edge_fan(aes(alpha = after_stat(index)), show.legend = FALSE) +
+  geom_node_point(aes(size = Popularity))
+```
+
+E aqui o grafo é separado em duas facetas de acordo com a variável _year_:
+
+```{r}
+ggraph(graph, layout = "kk") +
+  geom_edge_fan(aes(alpha = after_stat(index)), show.legend = FALSE) +
+  geom_node_point(aes(size = Popularity)) +
+  facet_edges(~year) +
+  theme_graph(foreground = "purple4", fg_text_colour = "white")
+```
+
+* Sobre cores em R: [R colors [Full List, Color Converter and Color Picker] | R CHARTS](https://r-charts.com/colors/)
+
+Como é difícil entender esse exemplo com tanta informação, decidi filtrar as 10 primeiras linhas do conjunto `highschool`.
+
+```{r}
+rm(graph)
+
+hs10 <- highschool %>% 
+  head(10)
+
+hs10_graph <- as_tbl_graph(hs10) %>% 
+  mutate(Popularity = centrality_degree(mode = "in"))
+```
+
+Agora temos as seguintes amostras:
+
+Dez primeiras linhas do conjunto highschool:
+
+```{r}
+hs10
+```
+
+Estrutura:
+
+```{r}
+str(hs10)
+```
+
+Todos os valores são numéricos.
+
+Esse é o grafo dessas dez primeiras linhas, exibido como uma árvore:
+
+```{r}
+hs10_graph
+```
+
+Ele tem essa estrutura:
+
+```{r}
+str(hs10_graph)
+```
+
+Se plotarmos apenas essa amostra, temos o seguinte grafo:
+
+```{r}
+ggraph(hs10_graph, layout = "kk") +
+  geom_edge_fan(aes(alpha = after_stat(index)), show.legend = TRUE) +
+  geom_node_point(aes(size = Popularity)) +
+  facet_edges(~year) +
+  theme_graph(foreground = "purple4", fg_text_colour = "white")
+```
+
+Analisando a coluna de popularidade, nesse ponto percebi que ela se refere à quantidade de vezes que um valor é mencionado na coluna "to".
+
+Se ordenarmos os nós pela popularidade, temos 15 e 21 no topo:
+
+```{r}
+hs10_graph %>% 
+  arrange(desc(Popularity))
+```
+
+Do lado direito, sozinhos, o ponto maior é 5, que recebe uma conexão de 4, e o menor é 4, que não recebe nenhuma conexão. 
+
+Isso também mostra que a parte transparente das linhas (_edges_) que conectam os nós é mais fraca na parte em que sai do nó. Isso é definido em `geom_edge_fan(aes(alpha = after_stat(index))`
+
+Na página sobre [Edges](https://ggraph.data-imaginist.com/articles/Edges.html) encontrei como tornar as linhas em setas e nomear os nós:
+
+```{r}
+ggraph(hs10_graph, layout = "kk") + 
+  geom_edge_link(aes(start_cap = label_rect(node1.name),
+                     end_cap = label_rect(node2.name)), 
+                 arrow = arrow(length = unit(4, "mm"))) + 
+  geom_node_point(aes(size = Popularity), color = "gray") +
+  geom_node_text(aes(label = name))
+```
+
+A visualização acima foi essencial para compreender a biblioteca através de um exemplo prático e reduzido, e confirmar as suspeitas descritas anteriormente.
+
+A [documentação sobre nodes](https://ggraph.data-imaginist.com/articles/Nodes.html) da biblioteca ggpraph tem muitos exemplos interessantes. Para não perder tempo, porém, decidi primeiro transformar os dados do projeto para que pudesse fazer mais testes já usando eles.
+
+Agora já temos uma ideia de que tipo de esquema precisamos para usar a estrutura de grafo. Ele parece ser centrado nas colunas "name" (um "ID"), "from" e "to" (de/para), que indicam as conexões de saída e entrada, e uma coluna de "popularidade" que mostra o total de menções daquele ID na coluna "para".
+
+### Mapeamento
+
+Podemos começar limpando o ambiente. Vamos trabalhar com o conjunto "termos" como o resultado da limpeza feita até aqui.
+
+```{r}
+termos <- mdst_adt
+rm(mdst_ad, mdst_adc, mdst_cl, mdst_fl, mdst_pv, dup_check, hs10_graph, hs10)
+```
+
+Para podermos plotar um grafo e observar relações, será necessário então ter uma estrutura similar a essa:
+
+```
+# A tibble: 6 × 2
+   from    to
+  <dbl> <dbl>
+1     1    14
+2     1    15
+3     1    21
+4     1    54
+5     1    55
+6     2    21
+```
+
+Mas para termos também a informação de que tipo de relação existe entre cada nó, seria preferível uma estrutura assim:
+
+| **from** |  **to** | **edge**  |
+|   ---    |     --- |    ----   |
+| 1        |  14     | PrefLabel |
+| 2        |  15     | AltLabel1 |
+| 3        |  21     | AltLabel1 |
+| 4        |  54     | PrefLabel |
+| 5        |  55     | AltLabel2 |
+| 6        |  21     | PrefLabel |
+| 7        |  34     | PrefLabel |
+| 8        |  66     | PrefLabel |
+| 9        |  11     | AltLabel3 |
+| 10       |  80     | PrefLabel |
+
+
+A diferença entre PrefLabel e AltLabel é apenas uma possibilidade entre várias que podem ser usadas para determinar qual é a relação entre os dois termos. Neste caso, a diferença entre a AltLabel ser 1, 2 ou 3 é pouco relevante, então não será usada.
+
+Outras relações poderiam ser relacionadas à semântica presente na frase, por exemplo, se o termo é mencionado na definição como "é" ou "não é", como um "tipo de" ou "pertence a", etc.
+
+Aqui vamos utilizar um algoritmo simples que apenas conta a quantidade de menções de cada PrefLabel ou AltLabel e as adiciona em uma tabela de relações:
+
+```{mermaid}
+flowchart TB
+    a( ) -->
+    
+    A{id = pair} -- T --> B[pair = pair + 1]
+    B --> Ae( )
+    A -- F --> Ae( )
+    Ae( ) --> C{pair contém \nPrefLabel}
+    C -- T --> D[adiciona a \nrelacoes]
+    D --> Ce( )
+    C -- F --> E{pair contém \nAltLabel}
+    E -- T --> F[adiciona a \nrelacoes]
+    E -- F --> Ee( )
+    
+    F --> Ee( )
+    Ee --> Ce( )
+
+    --> z( )
+```
+
+
+Por exemplo, o ID discovery_metadata_141 tem uma definição que começa com _"Metadata that are used for the discovery of data"_. Essa definição contém a PrefLabel "metadata" do ID metadata_158.
+
+Isso criará uma relação com origem (from) em discovery_metadata_141 e chegada (to) em metadata_158 com a relação (edge) PrefLabel:
+
+| **from** | **to** | **edge**  |
+|----------|--------|-----------|
+| 141      | 157    | PrefLabel |
+
+
+Vamos criar o dataframe relacoes com uma coluna para a relação de origem (from), de chegada (to) e uma coluna para saber qual é o tipo de relação (edge), optando apenas entre PrefLabel e AltLabel.
+
+```{r}
+relacoes = data.frame(to = 0, from = 0, edge = "none")
+
+str(relacoes)
+```
+
+O código abaixo implementa o algoritmo mostrado acima.
+
+Ele percorre nosso conjunto de dados e mapeia cada relação em uma nova linha, gravando o ID de origem e destino de cada menção de um PrefLabel em uma Definition.
+
+```{r mapeia relações}
+#| code-fold: true
+#| code-hold: true
+
+matches <- 1
+for (id in 1:nrow(termos)) {
+  
+  
+  for (pair in 1:nrow(termos)) {
+    
+    if (id == pair) {
+      pair <- pair + 1
+    }
+    else {
+      if (str_detect(termos[pair,]$Definition, 
+           paste0("\\b", termos[id,]$PrefLabel, "\\b")) == TRUE) {
+        
+        relacoes[matches,] <- c(id, pair, "PrefLabel")
+        matches <- matches + 1
+      }
+      else if (is.na(termos[id,]$AltLabel_1) == FALSE &&
+               str_detect(termos[pair,]$Definition, 
+                paste0("\\b", termos[id,]$AltLabel_1, "\\b")) == TRUE) {
+        
+        relacoes[matches,] <- c(id, pair, "AltLabel")
+        matches <- matches + 1
+      }
+      else if (is.na(termos[id,]$AltLabel_2) == FALSE &&
+               str_detect(termos[pair,]$Definition,
+                paste0("\\b", termos[id,]$AltLabel_2, "\\b")) == TRUE) {
+        relacoes[matches,] <- c(id, pair, "AltLabel")
+        matches <- matches + 1
+      }
+      else if (is.na(termos[id,]$AltLabel_3) == FALSE &&
+               str_detect(termos[pair,]$Definition,
+                paste0("\\b", termos[id,]$AltLabel_3, "\\b")) == TRUE) {
+        relacoes[matches,] <- c(id, pair, "AltLabel")
+        matches <- matches + 1
+      }
+    }
+    
+  }
+}
+
+paste("Matches:", matches)
+```
+
+```{r}
+#| echo: false
+rm(id, pair, matches)
+```
+
+Possivelmente existem soluções menos iterativas. Essa técnica não seria útil para um conjunto de dados muito grande.
+
+Após o mapeamento, foram encontradas um total de 138 relações.
+
+Terminada a manipulação como strings, vamos tipar os IDs como inteiros de novo:
+
+```{r}
+relacoes <- relacoes %>% 
+  mutate(across(c(1, 2), as.integer))
+```
+
+Entre as relações, a maioria acontece por PrefLabels:
+
+```{r}
+#| code-fold: true
+
+relacoes %>% 
+  select(edge) %>% 
+  ggplot(aes(x = edge, fill = edge)) +
+  geom_bar() +
+  geom_text(aes(label = after_stat(count)), stat = "count", vjust = 2, colour = "white") +
+  theme(legend.position = "none")
+```
+
+Apenas 24 relações são AltLabels.
+
+Uma vez com as relações mapeadas, podemos começar a estruturar os dados para plotagem:
+
+```{r}
+library(ggplot2)
+library(ggraph)
+library(tidygraph)
+```
+
+Por fim é preciso criar um grafo com o tipo `tbl_graph` ([do pacote tidygraph](https://tidygraph.data-imaginist.com/reference/tbl_graph.html)), que será passado às funções da biblioteca ggraph para gerar os grafos:
+
+```{r}
+grafo <- as_tbl_graph(relacoes, nodes = termos, edges = relacoes) %>% 
+  mutate(Popularity = centrality_degree(mode = "in")) %>% 
+  mutate(Community = as.factor(group_infomap()))
+```
+
+Este grafo já incluirá informações de popularidade e comunidade.
+
+Agora podemos começar a visualizar as relações entre os termos.
+
+## 4. Analisar
+
+```{r}
+#| code-fold: true
+#| warning: false
+
+ggraph(grafo, layout = "kk") +
+  geom_edge_fan(aes(alpha = after_stat(index)), show.legend = TRUE) +
+  geom_node_point(aes(size = Popularity), color = "black") +
+  theme_graph(foreground = "purple4", fg_text_colour = "white")
+```
+
+A primeira informação que logo vemos aqui é que há um aglomerado principal, do lado esquerdo, e apenas alguns aglomerados menores, unindo no máximo cinco termos.
+
+Entre estes conjuntos menores temos um com 5 elementos, 4 com 3 elementos e outros 5 com 2 elementos cada.
+
+Ao tentar adicionar os nomes de cada nó, percebi que a quantidade de texto é enorme e fica pior ainda se adicionamos os nomes das conexões:
+
+```{r}
+#| code-fold: true
+#| warning: false
+
+ggraph(grafo, layout = "kk") + 
+  geom_edge_link(aes(),
+                 arrow = arrow(length = unit(4, "mm")),
+                 end_cap = circle(3, "mm")) +
+  geom_edge_link(aes(start_cap = label_rect(node1.name),
+                 end_cap = label_rect(node2.name)), 
+                 arrow = arrow(length = unit(1, "mm"))) + 
+  geom_node_point(aes(size = Popularity), color = "gray", show.legend = FALSE) +
+  geom_node_text(aes(label = termos[name,]$PrefLabel))
+```
+
+Vamos usar cores para representar o tipo de conexão e ajustar o tamanho da fonte de acordo com a popularidade:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: screen
+#| fig-width: 14
+#| fig-height: 10
+
+ggraph(grafo, layout = "kk") + 
+  geom_edge_density(aes(fill = edge), show.legend = FALSE) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = FALSE) + 
+  geom_edge_parallel(aes(color = edge),
+                 arrow = arrow(length = unit(1, "mm")), 
+                 start_cap = circle(3, "mm"),
+                 end_cap = circle(3, "mm")) +
+  geom_node_text(aes(label = termos[name,]$PrefLabel, size = 3 + Popularity),
+                 alpha = 0.75) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.justification = "right", legend.direction = "horizontal") + 
+  guides(size = "none")
+```
+
+A visualização acima usa um efeito de densidade para representar as áreas de acordo com relações por PrefLabel ou AltLabel. É possível ver aqui que as PrefLabels (azul) predominam por todo o grafo, à exceção da área ao redor do nó **data set**.
+
+Vejamos quais são as AltLabels desse termo:
+
+```{r}
+#| code-fold: true
+
+termos %>% 
+  filter(PrefLabel %in% c("data set")) %>% 
+  select(AltLabel_1, AltLabel_2, AltLabel_3)
+```
+
+Na verdade, a única AltLabel para "data set" é "dataset". Se observarmos mais de perto, podemos perceber que a maioria das relações para "data set" ocorrem por sua AltLabel e não pelo nome principal:
+
+```{r}
+#| code-fold: true
+#| warning: false
+
+grafo %>% 
+  filter(Community %in% c(1, 2, 5)) %>% 
+
+  ggraph(layout = "kk") + 
+  
+  geom_edge_fan(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    edge_width = 0.25,
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = FALSE) + 
+  
+  geom_node_text(aes(
+    label = termos[name,]$PrefLabel,
+    size = Popularity,
+    alpha = Popularity),
+    show.legend = FALSE,
+    repel = TRUE) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right") +
+  facet_edges(~edge)
+```
+
+Vamos usar o geom `geom_node_label` no lugar de `geom_node_text` para ter um fundo branco em nossas labels e usar a propriedade `repel = TRUE` para evitar tantas sobreposições.
+
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: screen
+#| fig-width: 16
+#| fig-height: 12
+
+ggraph(grafo, layout = "kk") + 
+geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+  end_cap = label_rect(node2.name)),
+  angle_calc = "along",
+  label_size = 1,
+  label_dodge = unit(2.5, "mm"),
+  arrow = arrow(length = unit(1, "mm")), 
+  start_cap = circle(4, "mm"),
+  end_cap = circle(4, "mm")) +
+geom_node_point(aes(colour = Community, size = Popularity), show.legend = FALSE) + 
+geom_node_label(aes(
+  label = termos[name,]$PrefLabel,
+  size = 3 + Popularity),
+  show.legend = FALSE,
+  repel = TRUE,
+  alpha = 0.75) +
+theme(legend.title = element_blank(), legend.position = "bottom", legend.justification = "right", legend.direction = "horizontal")
+```
+
+O resultado é bem mais legível, mas ainda não é apropriado para uma pequena área de visualização. Nesta página, estamos usando toda a área disponível e mesmo assim a visualização é difícil. O gráfico está poluído e não é possível discernir a que cada label se refere.
+
+Vamos separar um pouco mais, retirando os conjuntos menores.
+
+#### Clusterização
+
+A visão geral pode ser interessante, mas é mais apropriada para visualizações interativas que possam ser arrastadas e usar de recursos como zoom e a exibição dinâmica dos nomes dos nós --- ao tocar ou passar o mouse em cima, por exemplo. Esse processo será abordado na [seção 5](#compartilhar).
+
+Para continuar a análise, vamos criar _clusters_, ou seja, conjuntos menores de nós onde poderemos focar.
+
+As bibliotecas que lidam com estruturas de dados como grafos fornecem recursos úteis para manipular e segmentar esses dados, encontrando subgrupos dentro deles e separando suas relações. Um desses recursos é a possibilidade de automaticamente encontrar quais são as "comunidades" de nós, ou seja, quais nós possuem mais proximidade dentro da rede.
+
+Vamos gerar um novo gráfico que exiba numericamente as comunidades nas labels:
+
+```{r}
+#| code-fold: true
+#| warning: false
+
+ggraph(grafo, layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    angle_calc = "along",
+    label_size = 1,
+    label_dodge = unit(2.5, "mm"),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm"),
+    show.legend = FALSE) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = FALSE) + 
+  geom_node_label(aes(
+    label = Community),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.75)
+```
+
+Com base nessa vizualização podemos pensar em novos conjuntos clusterizados:
+
+```{r}
+cluster_data_repository <- grafo %>% 
+  filter(Community == 7)
+```
+
+Esse conjunto mostrará apenas o pequeno cluster de cinco nós, nomeado pelo seu nó mais popular, "data repository":
+
+```{r}
+#| code-fold: true
+#| warning: false
+
+ggraph(cluster_data_repository, layout = "kk") + 
+  
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = FALSE) + 
+  
+  geom_node_label(aes(
+    label = termos[name,]$PrefLabel),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.75) +
+  theme(legend.title = element_blank(), legend.position = c(1,0.05),
+        legend.direction = "horizontal", legend.justification = "right",
+        legend.background = element_rect(fill = "transparent"),
+        legend.box.background = element_rect(fill = "transparent", color = "transparent")) +
+    facet_graph(~Community)
+```
+
+Agora vamos separar nosso cluster principal, onde está a maior parte da amostra:
+
+```{r}
+cluster_principal <- grafo %>% 
+  filter(Community %in% c(1:6, 8:10, 14, 15, 22))
+```
+
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: screen
+#| fig-width: 24
+#| fig-height: 18
+
+ggraph(cluster_principal, layout = "kk") + 
+geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+  end_cap = label_rect(node2.name)),
+  arrow = arrow(length = unit(1, "mm")), 
+  start_cap = circle(4, "mm"),
+  end_cap = circle(4, "mm")) +
+geom_node_point(aes(colour = Community, size = Popularity), show.legend = FALSE) + 
+geom_node_label(aes(
+  label = termos[name,]$PrefLabel,
+  size = 5 + Popularity),
+  show.legend = FALSE,
+  repel = TRUE,
+  alpha = 0.75) +
+theme(legend.title = element_blank(), legend.position = "bottom",
+      legend.justification = "right", legend.direction = "horizontal")
+```
+
+Para podermos segmentar mais ainda, vamos novamente visualizar as comunidades, dessa vez com o tamanho e a opacidade ajustadas por popularidade:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: screen
+#| fig-width: 15
+#| fig-height: 11
+
+ggraph(cluster_principal, layout = "kk") + 
+  geom_edge_fan(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity)) + 
+  geom_node_text(aes(label = termos[name,]$PrefLabel, size = Popularity),
+                 color = "darkgray", alpha = 1) +
+  geom_node_label(aes(label = Community), repel = TRUE) +
+  theme(legend.position = "none")
+```
+
+
+#### Análise da popularidade
+
+Agora que temos as comunidades bem definidas visualmente, vamos incluir os valores de popularidade no conjunto principal para podermos extrair algumas informações sobre a métrica:
+
+```{r}
+termos <- termos %>% 
+  mutate(Popularity = 0) %>% 
+  mutate(id = row_number())
+
+for (obs in 1:nrow(termos)) {
+  termos[obs,]$Popularity <- sum(relacoes$to == termos[obs,]$id)
+}
+
+rm(obs)
+
+termos <- termos %>% 
+  select(concept_id, Popularity, PrefLabel,
+         Definition, AltLabel_1, AltLabel_2, AltLabel_3)
+```
+
+O conjunto termos agora inclui dados de popularidade. Podemos ver quais são os termos mais populares:
+
+```{r}
+termos %>% 
+  filter(Popularity > 0) %>% 
+  arrange(desc(Popularity))
+```
+
+E podemos ver também quais são os níveis existentes de popularidade:
+
+```{r}
+table(termos$Popularity)
+```
+
+A grande maioria dos termos (159) tem popularidade zero. 29 termos recebem apenas uma ligação e 8 recebem duas. Os demais termos, que recebem 3 ou mais ligações, juntos são apenas 15.
+
+Também podemos representar isso da seguinte forma:
+
+```{r}
+#| code-fold: true
+
+data.frame(popularidade = c("zero", "1", "2", "3 ou mais"),
+           quantidade = c(159, 29, 8, 15)) %>%
+  ggplot(aes(x = "", y = quantidade, fill = popularidade)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  labs(title = "Popularidade dos termos", subtitle = "159 termos não recebem ligações.")
+```
+
+Podemos também saber qual é a popularidade média:
+
+```{r}
+mean(termos$Popularity)
+```
+
+Ou a popularidade média entre termos com popularidade acima de zero:
+
+```{r}
+termos %>% 
+  filter(Popularity > 0) %>% 
+  select(Popularity) %>% 
+  summary()
+```
+
+A popularidade média quando acima de zero é de 2.635.
+
+Com base nesses dados, abaixo foi desenvolvida uma relação de quais seriam possíveis nomes para cada categoria a partir dos nós mais relevantes em cada comunidade.
+
+A tabela está ordenada da maior à menor popularidade e limita-se à amostra do cluster principal.
+
+| **Comunidade** | **Nó**                | **Popularidade** |
+|----------------|-----------------------|------------------|
+| 2              | metadata              | 19               |
+| 3              | research data         | 11               |
+| 1              | data set              | 10               |
+| 4              | personal data         | 8                |
+| 5              | data management       | 6                |
+| 2              | data quality          | 6                |
+| 6              | raw data              | 5                |
+| 2              | data interoperability | 4                |
+| 8              | data protection       | 4                |
+| 3              | persistent identifier | 4                |
+| 1              | data accessibility    | 3                |
+| 5              | data collection       | 3                |
+| 9              | data structure        | 3                |
+| 4              | data subject          | 3                |
+| 3              | identifier            | 3                |
+| 10             | data findability      | 2                |
+
+#### Categorização
+
+Se você veio até aqui pelo atalho e gostaria de saber o que significam termos como **nó** e **popularidade**, pode encontrar uma explicação na [seção 1](#perguntar).
+
+Em nossa amostra principal estão contempladas todas as comunidades de 1 a 10, com exceção da comunidade 7, que não conecta-se ao cluster principal.
+
+Além destas 9 comunidades, que são as maiores e mais populares, restam ainda três comunidades menores: 14, 15 e 22.
+
+Vamos começar nossa viagem por elas.
+
+Abaixo podemos ver as três separadamente:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: body-outset
+#| fig-width: 10
+#| fig-height: 6
+
+cluster_principal %>%
+  filter(Community %in% c(14, 15, 22)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = FALSE) + 
+  geom_node_text(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.70,
+    check_overlap = TRUE) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right") +
+    facet_graph(~Community)
+```
+
+As comunidades 14 e 22 estão bastante próximas no grafo, tendo como ponte o cluster research data:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: body-outset
+#| fig-width: 10
+#| fig-height: 5
+
+cluster_principal %>%
+  filter(Community %in% c(14, 22, 3)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_text(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.5) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none")
+```
+
+Na visualização acima, podemos ver que a comunidade 14 tem como ponto mais externo "data governance". Esse termo faz a ponte para os demais de sua comunidade.
+
+O mesmo acontece com "data archiving". Se este termo não fosse mencionado por "data lifecycle", a comunidade seria outra das que ficaram excluídas do cluster principal.
+
+Já a comunidade 15 está mais próxima da comunidade 2, metadata. Ela aparece abaixo em azul, na parte inferior do gráfico:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: body-outset
+#| fig-width: 12
+#| fig-height: 8
+
+cluster_principal %>%
+  filter(Community %in% c(14, 22, 15, 2, 3)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_text(aes(
+    label = termos[name,]$PrefLabel, size = 20 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.5) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none")
+```
+
+A visualização acima mostra as três comunidades menores, 14, 15 e 22, junto de suas vizinhas maiores, o cluster metadata (número 2, em laranja, abaixo) e o cluster research data (número 3, em verde, acima).
+
+Outro fato visível nesta visualização é como a comunidade 5 representa um ponto nevrálgico entre quase todas as principais comunidades. Sem ela, a comunidade 3, research data, uma das três maiores, ficaria isolada das duas outras.
+
+Podemos confirmar isso na visualização abaixo, inclui todas as comunidades do cluster principal exceto a comunidade 5:
+
+```{r}
+#| column: screen
+#| warning: false
+#| code-fold: true
+#| fig-width: 15
+#| fig-height: 11
+
+cluster_principal %>%
+  filter(!Community %in% c(5)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_text(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.5) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none")
+```
+
+Aqui podemos ver um recorte desse coração do grafo, com as quatro comunidades juntas: 1, 2, 3 e 5.
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: screen
+#| fig-width: 15
+#| fig-height: 11
+
+cluster_principal %>%
+  filter(Community %in% c(1, 2, 3, 5)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_label(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.7) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none")
+```
+
+E nessa visualização vemos elas junto com as três menores onde começamos nossa viagem:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: screen
+#| fig-width: 15
+#| fig-height: 11
+
+cluster_principal %>%
+  filter(Community %in% c(1, 2, 3, 5, 14, 15, 22)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_label(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.7) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none")
+```
+
+Duas comunidades relativamente pequenas, mas com um pouco mais de popularidade, também estão bastante próximas a esse núcleo: 6 e 10.
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: body-outset
+#| fig-width: 10
+#| fig-height: 6
+
+cluster_principal %>%
+  filter(Community %in% c(6, 10)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_label(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.7) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none") +
+  facet_graph(~Community)
+```
+
+Elas fazem pontes com o cluster metadata:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: body-outset
+#| fig-width: 10
+#| fig-height: 5
+
+cluster_principal %>%
+  filter(Community %in% c(2, 6, 10)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_text(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.5) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none")
+```
+
+Juntando portanto todas as comunidades centrais, com as quatro maiores e suas imediações formadas pelas pequenas comunidades (2, 6, 10, 14, 15, 22) temos um grafo já bastante recheado:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: screen
+#| fig-width: 15
+#| fig-height: 11
+
+cluster_principal %>%
+  filter(Community %in% c(1, 2, 3, 5, 2, 6, 10, 14, 15, 22)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_label(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.7) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none")
+```
+
+
+Restam apenas as comunidades, 4, 8 e 9 que formam as bordas esquerda e direita do cluster principal.
+
+As comunidades 4 e 8 são muito próximas, e falam sobre a proteção de dados e o sujeito de dados. Elas possuem relações entre si, independentemente de outros conjuntos.
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: body-outset
+#| fig-width: 10
+#| fig-height: 6
+
+cluster_personal_data <- cluster_principal %>%
+  filter(Community %in% c(4, 8)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_text(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.7) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none") +
+  facet_graph(~Community, margins = TRUE)
+
+cluster_personal_data
+```
+Sua ligação com o cluster principal não é através do cluster metadata, mas sim do nó "data security" (da comunidade 8) que se conecta ao nó "data integrity" do cluster data set:
+
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: body-outset
+#| fig-width: 10
+#| fig-height: 5
+
+cluster_principal %>%
+  filter(Community %in% c(1, 4, 8)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_text(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.5) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none")
+```
+
+Este é um de meus recortes preferidos. Ele mostra um caminho significativo que vai de "dados pessoais" para "proteção de dados" e que então faz uma ponte que passa por "segurança" e "integridade de dados" para só então desaguar no conjunto principal.
+
+Por fim, no outro extremo do grafo, no lado esquerdo, temos a pequena comunidade 9, que orbita ao redor do nó "data structure":
+
+```{r}
+#| code-fold: true
+#| warning: false
+
+cluster_principal %>%
+  filter(Community %in% c(9)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_label(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.7) +
+  theme(legend.title = element_blank(), legend.position = "none",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none") +
+  facet_graph(~Community)
+```
+Através de "PID record" ela conecta-se a "persistent identifier", que por sua vez está ligado ao cluster research data:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: body-outset
+#| fig-width: 10
+#| fig-height: 5
+
+cluster_principal %>%
+  filter(Community %in% c(3, 9)) %>% 
+  ggraph(layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)),
+    arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"),
+    end_cap = circle(4, "mm")) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = TRUE) + 
+  geom_node_text(aes(
+    label = termos[name,]$PrefLabel, size = 4 + Popularity),
+    show.legend = FALSE,
+    repel = TRUE,
+    alpha = 0.5) +
+  theme(legend.title = element_blank(), legend.position = "bottom",
+        legend.direction = "horizontal", legend.justification = "right")  +
+  guides(size = "none")
+```
+
+Aqui voltamos a nossa primeira visualização geral do cluster principal, com todas as suas comunidades:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: screen
+#| fig-width: 16
+#| fig-height: 12
+
+ggraph(cluster_principal, layout = "kk") + 
+geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+  end_cap = label_rect(node2.name)),
+  arrow = arrow(length = unit(1, "mm")), 
+  start_cap = circle(4, "mm"),
+  end_cap = circle(4, "mm")) +
+geom_node_point(aes(colour = Community, size = Popularity), show.legend = FALSE) + 
+geom_node_label(aes(
+  label = termos[name,]$PrefLabel,
+  size = 5 + Popularity),
+  show.legend = FALSE,
+  repel = TRUE,
+  alpha = 0.75) +
+theme(legend.title = element_blank(), legend.position = "bottom",
+      legend.justification = "right", legend.direction = "horizontal")
+```
+
+
+#### Outros protótipos
+
+Para registro da exploração, seguem abaixo alguns outros protótipos que usam diferentes layouts:
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: body-outset
+#| fig-width: 5
+#| fig-height: 10
+
+cluster_principal %>% 
+  ggraph(layout = "partition", circular = TRUE) +
+  geom_edge_diagonal() + 
+  geom_node_point(aes(size = Popularity, color = Community), show.legend = FALSE) + 
+  geom_node_text(aes(label = name), color = "black", check_overlap = TRUE, size = 4) +
+  coord_fixed()
+```
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: screen
+#| fig-width: 15
+#| fig-height: 11
+
+grafo %>% 
+  filter(Community %in% c(1:2)) %>% 
+  ggraph(layout = "linear") + 
+    geom_edge_arc(aes(), color = "gray") +
+    geom_node_point(aes(size = Popularity, color = Popularity), show.legend = FALSE) +
+    geom_node_text(aes(label = termos[name,]$PrefLabel), nudge_y = -3, size = 4) +
+    facet_graph(~ Community) +
+    coord_flip()
+```
+
+
+```{r}
+#| code-fold: true
+#| column: body-outset
+
+grafo %>% 
+  filter(Community %in% c(9:12)) %>% 
+  ggraph(layout = "linear", circular = TRUE) + 
+  geom_edge_arc(aes(color = edge)) + 
+  geom_node_point(aes(size = Popularity, color = Community), show.legend = TRUE) +
+  geom_node_text(aes(label = termos[name,]$PrefLabel), size = 5, nudge_y = -0.15, angle = -0) +
+  theme(legend.position = "bottom", legend.direction = "horizontal") +
+  guides(size = "none")
+```
+
+
+```{r}
+#| code-fold: true
+#| warning: false
+#| column: body-outset
+
+grafo %>% 
+  filter(Community %in% c(7,5,12)) %>% 
+  ggraph("tree") + 
+  geom_edge_diagonal(aes(color = edge)) +
+  geom_node_label(aes(label = termos[name,]$PrefLabel, fill = Community),
+                 color = "white",
+                 fontface = "bold",
+                 size = 2.5,
+                 nudge_x = 0,
+                 nudge_y = -0.130,
+                 label.padding = unit(0.25, "lines")) +
+  theme(legend.position = "bottom", legend.justification = "left", legend.direction = "horizontal", legend.background = element_rect(fill = "transparent"), legend.box.background = element_rect(fill = "transparent", color = "transparent")) +
+  coord_flip()
+```
+
+
+Demais referências da pesquisa:
+
+* [Network with node size based on edge number – the R Graph Gallery](https://r-graph-gallery.com/251-network-with-node-size-based-on-edges-number.html)
+* [Clustering result visualization with network diagram – the R Graph Gallery](https://r-graph-gallery.com/250-correlation-network-with-igraph.html)
+* [Network Analysis with R | Manipulating Network Data](https://towardsdatascience.com/network-analysis-in-r-manipulating-network-data-ee388fba7215)
+* [A Rogue Historian - Introduction to Network Analysis with R](https://www.jessesadler.com/post/network-analysis-with-r/)
+* [Network Visualization Essentials in R - Articles - STHDA](http://www.sthda.com/english/articles/33-social-network-analysis/135-network-visualization-essentials-in-r/)
+* [Interactive Network Visualization with R | R-bloggers](https://www.r-bloggers.com/2019/06/interactive-network-visualization-with-r/)
+
+## 5. Compartilhar
+
+Os dados aqui contam a história de uma viagem por diferentes campos semânticos. Temos termos que pertencem a um mesmo contexto, a gestão de dados, mas que têm diferentes níveis de proximidade.
+
+No começo, parti com o objetivo de determinar quais termos tinham mais relevância. Ficou bastante evidente que termos como **metadados** e **data set** são bastante importantes para podermos compreender inúmeros outros, ou seja, eles são componentes importantes para explicar e precisar o vocabulário de dados.
+
+Outro termo de grande destaque também foi **personal data**, que aparece com importância para explicar ideias relacionadas à proteção de dados. Esse termo gerou uma das relações entre comunidades mais semanticamente significativas.
+
+```{r}
+#| echo: false
+#| warning: false
+#| column: body-outset
+#| fig-width: 10
+#| fig-height: 6
+cluster_personal_data
+```
+
+Visualizações como essa podem exemplificar o poder de pensar os termos não só por suas repetições mas especialmente por suas relações e como essas relações os agrupam. É justamente o nó "segurança de dados" que faz a ponte externa desse conjunto para o cluster principal.
+
+Apesar de não terem grande popularidade, esses termos que realizam pontes, mencionando ou sendo mencionados por outros termos fora de suas comunidades, também poderiam ser pensados como tendo importância específica na análise de relações em linguagem natural, já que sem eles teríamos uma rede semântica mais dispersa.
+
+Ao pensar em análise de _definições_, a menção de um termo implica não somente conexão ou relevância mas uma possível _necessidade_ daquela palavra para _conseguir definir_ outro termo.
+
+Numericamente, esses foram os resultados finais da métrica de popularidade:
+
+```{r}
+#| code-fold: true
+
+termos %>% 
+  filter(Popularity > 0) %>% 
+  arrange(desc(Popularity)) %>% 
+  select(PrefLabel, Popularity) %>% 
+  rename(Termo = PrefLabel) %>% 
+  rename(Popularidade = Popularity)
+```
+
+Para pessoas que se interessam ou trabalham com o processamento de linguagem natural, ou que precisam determinar a importância de diferentes conceitos para estudar ou ensinar sobre eles, o mapeamento de relações semânticas pode ser uma ferramenta bastante didática.
+
+Como última etapa, gostaria ainda de explorar a possibilidade de navegar interativamente por este grafo após ter mergulhado e nadado nele por algum tempo. Essa intenção surgiu após as primeiras plotagens, pois durante todo o processo muitos gráficos acabam poluídos demais pelo texto que identifica cada ponto.
+
+Bibliotecas para visualização interativa de grafos permitem que o texto identificador apareça apenas quando interagimos com um determinado nó.
+
+### networkD3
+
+```{r}
+library(networkD3)
+```
+
+#### Modelagem
+
+Cria uma estrutura para edges conforme requisitado pela biblioteca:
+
+```{r}
+edges_d3 <- relacoes %>% 
+  rename(Source = from) %>% 
+  rename(Target = to) %>% 
+  select(-edge)
+```
+
+Converte os valores para inteiros:
+
+```{r}
+edges_d3 <- edges_d3 %>% 
+  mutate(across(c(1, 2), as.integer))
+```
+
+Cria a estrutura para os nós:
+
+```{r}
+nodes_d3 <- termos %>% 
+  mutate(id = row_number()) %>% 
+  mutate(popularity = 0) %>% 
+  select(id, PrefLabel, popularity, Definition)
+```
+
+É necessário ainda diminuir todos os IDs em 1 pois a biblioteca é baseada em um framework JavaScript que usa indexação a partir de 0, ao contrário da linguagem R.
+
+```{r}
+nodes_d3[, 1] <- nodes_d3[, 1] - 1
+edges_d3[, 1:2] <- edges_d3[, 1:2] - 1
+```
+
+
+Aqui a popularidade é calculada e acrescentada ao dataframe de nós e multiplicada por 10 para que a diferença de tamanho seja mais visível:
+
+```{r}
+for (row in 1:nrow(nodes_d3)) {
+  nodes_d3[row,]$popularity <- 10 * sum(edges_d3$Target == nodes_d3[row,]$id)
+}
+
+rm(row)
+```
+
+Por fim temos uma primeira plotagem interativa:
+
+```{r}
+#| code-fold: true
+#| column: screen-inset-shaded
+
+clickScript <- 'console.log("click: " + d.name + ", row " + (d.index + 1));'
+
+forceNetwork(Links = edges_d3, Nodes = nodes_d3,
+                 NodeID = "PrefLabel",
+                 Group = "popularity",
+                 zoom = TRUE,
+                 Nodesize = "popularity",
+                 opacity = 1,
+                 clickAction = clickScript)
+```
+
+Na renderização acima é possível dar zoom e arrastar a visualização. Os nomes são exibidos ao tocar ou clicar sobre um nó e é possível ainda movimentá-los.
+
+```{r}
+#| echo: false
+
+# um pequeno conjunto de demonstração
+
+ss_links <- data.frame(source = c(0, 1, 2, 3, 4, 4, 5),
+                       target = c(1, 0, 0, 0, 0, 1, 3),
+                       value = c(1, 1, 1, 1, 1, 1, 1))
+
+mutate(ss_links, across(everything(), as.integer))
+
+ss_nodes <- data.frame(name = c("personal data", "data subject", "data processor",
+                                "data controller", "data leakage", "data minimisation"),
+                       group = c(4, 5, 3, 2, 1, 0),
+                       size = c(20, 20, 4, 4, 4, 2),
+                       stringsAsFactors = TRUE)
+
+mutate(ss_nodes, across(c(2,3), as.integer))
+
+clickScript <- 'console.log("click: " + d.name + ", row " + (d.index + 1));'
+
+forceNetwork(Links = ss_links, Nodes = ss_nodes,
+             NodeID = "name",
+             Group = "group",
+             zoom = TRUE,
+             Nodesize = "size",
+             opacity = 1,
+             clickAction = clickScript)
+```
+
+
+```{r}
+#| echo: false
+rm(edges_d3, nodes_d3, ss_links, ss_nodes, clickScript)
+```
+
+
+### visNetwork
+
+A última biblioteca oferece a possibilidade de exibir as definições completas ao interagir com cada nó.
+
+```{r}
+library(visNetwork)
+```
+
+Para trabalhar com essa biblioteca são necessaŕios também dois dataframes distintos, um para nodes e outro para edges. O dataframe com nodes deve ter uma coluna com IDs e o de edges deve ter colunas _from_ e _to_ que ligam os IDs.
+
+Outro fator é que as colunas desse dataframe podem ser usadas para passar suas propriedades estéticas.
+
+Vamos fazer essas adaptações:
+
+```{r}
+nodes_vN <- termos %>% 
+  mutate(id = row_number()) %>% 
+  mutate(size = 0) %>%
+  rename(label = PrefLabel) %>%
+  rename(title = Definition) %>% 
+  select(id, label, size, concept_id, title)
+
+for (row in 1:nrow(nodes_vN)) {
+  nodes_vN[row,]$size <- 2 * (5 + sum(relacoes$to == nodes_vN[row,]$id))
+  if (nodes_vN[row,]$size == 0) {
+    nodes_vN[row,]$size <- 3
+  }
+}
+
+rm(row)
+
+nodes_vN
+```
+
+Criação do dataframe de edges:
+
+```{r}
+edges_vN <- relacoes %>% 
+  mutate(dashes = FALSE) %>% 
+  mutate(color = "red")
+
+for (row in 1:nrow(edges_vN)) {
+  if (edges_vN[row,]$edge == "PrefLabel") {
+    edges_vN[row,]$color <- "#CD6839"
+    edges_vN[row,]$dashes <- FALSE
+  }
+  else {
+    edges_vN[row,]$color <- "#8B4726"
+    edges_vN[row,]$dashes <- TRUE
+  }
+}
+
+rm(row); edges_vN
+```
+
+Esta é a plotagem mais básica, sem argumentos extras:
+
+```{r}
+#| code-fold: true
+#| column: screen-inset-shaded
+
+visNetwork(nodes_vN, edges_vN)
+```
+
+Desde o primeiro gráfico é possível ver que o resultado padrão é muito mais legível do que nas demais bibliotecas.
+
+Usando mais argumentos podemos personalizar cores e incluir mais controles interativos:
+
+```{r}
+#| code-fold: true
+#| column: screen-inset-shaded
+
+visNetwork(nodes_vN, edges_vN, width = "100%") %>% 
+  visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE, collapse = TRUE) %>%
+  visNodes(color = list(background = "#EEE5DE", border = "#8B8682",
+                        highlight = "#FFA54F"),
+           shadow = list(enabled = TRUE, size = 10)) %>% 
+  visEdges(shadow = TRUE, smooth = TRUE) %>% 
+  visLayout(randomSeed = 1) %>% 
+  visPhysics(stabilization = FALSE,
+             solver = "repulsion") %>% 
+  visEvents(selectNode = "function(properties) {
+      console.log('seleção: ' + this.body.data.nodes.get(properties.nodes[0]).id);}") %>% 
+  visClusteringOutliers()
+```
+
+Na visualização acima é possível dar zoom, arrastar a visão, movimentar e colapsar nós. Quando um nó é selecionada, suas relações são destacadas.
+
+Abaixo, os mesmos dados com um layout circular.
+
+```{r}
+#| code-fold: true
+#| column: screen-inset-shaded
+
+visNetwork(nodes_vN, edges_vN) %>% 
+  visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE, collapse = TRUE,
+             manipulation = TRUE) %>%
+  visNodes(color = list(background = "#EEE5DE", border = "#8B8682",
+                        highlight = "#FFA54F"),
+           shadow = list(enabled = TRUE, size = 10)) %>% 
+  visEdges(shadow = TRUE, smooth = TRUE) %>% 
+  visIgraphLayout(layout = "layout_in_circle") 
+```
+
+Este formato é de difíci visualização com tantos nós inclusos. Aqui também está demonstrada a possibilidade de editar os nós com os controles interativos providos pela biblioteca.
+
+### Outras bibliotecas de visualização de grafos
+
+* [DiagrammeR](https://github.com/rich-iannone/DiagrammeR)
+
+
+## 6. Agir
+
+Para pessoas interessadas na gestão de dados, a análise dessa amostra sugere que termos como **metadados**, **interoperabilidade de dados** e **proteção de dados** e são especialmente relevantes para definir outros termos.
+
+Os grupos de termos de maior destaque entre os termos mais populares são **dados pessoais**, **dados de pesquisa** e **qualidade de dados**.
+
+Outros termos altamente populares não foram destacados neste último resumo acionável por terem um papel mais passivo como objetos da gestão de dados: **conjunto de dados**, **dados brutos**.
+
+Apesar de estar disponível em diferentes idiomas, o português não era uma das contempladas pelo _Multilingual Data Stewardship Terminology_. Seria possível, porém, cruzar dados de fontes compatíveis que possibilitassem um novo estudo de relações observando variações entre os idiomas.
+
+## Saiba mais
+
+Se desejar consultar o código fonte você [pode encontrá-lo no GitHub](https://github.com/jultty/mdst-graphs).
+
+* Outros links
+  * [SSHOC Multilingual Data Stewardship Terminology](https://dspace-clarin-it.ilc.cnr.it/repository/xmlui/handle/20.500.11752/ILC-567)
+  * [PLN para Iniciantes – Insight Data Science Lab](https://insightlab.ufc.br/pln-processamento-de-linguagem-natural-para-iniciantes/)
+  * [A Rede Semântica (i) – Humanidades Digitais](https://humanidadesdigitais.org/2012/10/04/a-rede-semantica-i/)
