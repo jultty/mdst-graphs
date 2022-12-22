@@ -11,7 +11,7 @@ filters:
    - lightbox
 format:
   html:
-    css: estilo.css
+    css: assets/estilo.css
     df-print: paged
     theme: litera
     toc: true
@@ -68,9 +68,9 @@ Se prefere ler somente as conclusões resumidas e acionáveis, [salte para o fin
   SSHOC Multilingual Data Stewardship Terminology, ILC-CNR for CLARIN-IT repository hosted at Institute for Computational Linguistics "A. Zampolli", National Research Council, in Pisa, 
   <http://hdl.handle.net/20.500.11752/ILC-567>.
 
-### Amostra da pesquisa
+### Levantamento
 
-#### Resumo de resultados
+#### Principais resultados
 
 | **Dataset** | **Observações** |
 |:-----------:|-----------------|
@@ -725,6 +725,8 @@ Ao contrário dos erros anteriores, na [página oficial do projeto](https://voca
 mdst_adt[158,]$Definition <- "a separate work that provides information describing one or more characteristics of a resource or entity."
 ```
 
+#### Revalidação
+
 Agora sim temos 211 entradas únicas para todas as variáveis:
 
 ```{r}
@@ -999,7 +1001,7 @@ Isso criará uma relação com origem (from) em discovery_metadata_141 e chegada
 
 | **from** | **to** | **edge**  |
 |----------|--------|-----------|
-| 141      | 157    | PrefLabel |
+| 141      | 158    | PrefLabel |
 
 
 Vamos criar o dataframe relacoes com uma coluna para a relação de origem (from), de chegada (to) e uma coluna para saber qual é o tipo de relação (edge), optando apenas entre PrefLabel e AltLabel.
@@ -1012,7 +1014,7 @@ str(relacoes)
 
 O código abaixo implementa o algoritmo mostrado acima.
 
-Ele percorre nosso conjunto de dados e mapeia cada relação em uma nova linha, gravando o ID de origem e destino de cada menção de um PrefLabel em uma Definition.
+Ele percorre nosso conjunto de dados e mapeia cada relação em uma nova linha, gravando o ID de origem e destino de cada menção de uma PrefLabel em uma Definition.
 
 ```{r mapeia relações}
 #| code-fold: true
@@ -1108,6 +1110,19 @@ grafo <- as_tbl_graph(relacoes, nodes = termos, edges = relacoes) %>%
   mutate(Community = as.factor(group_infomap()))
 ```
 
+```{r}
+#| echo: false
+#| fig-show: hide
+#| warning: false
+
+ggraph(grafo, layout = "kk") + 
+  geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
+    end_cap = label_rect(node2.name)), arrow = arrow(length = unit(1, "mm")), 
+    start_cap = circle(4, "mm"), end_cap = circle(4, "mm"), show.legend = FALSE) +
+  geom_node_point(aes(colour = Community, size = Popularity), show.legend = FALSE) + 
+  geom_node_label(aes(label = Community), show.legend = FALSE, repel = TRUE, alpha = 0.75)
+```
+
 Este grafo já incluirá informações de popularidade e comunidade.
 
 Agora podemos começar a visualizar as relações entre os termos.
@@ -1150,7 +1165,7 @@ Vamos usar cores para representar o tipo de conexão e ajustar o tamanho da font
 ```{r}
 #| code-fold: true
 #| warning: false
-#| column: screen
+#| column: screen-inset-shaded
 #| fig-width: 14
 #| fig-height: 10
 
@@ -1187,7 +1202,7 @@ Na verdade, a única AltLabel para "data set" é "dataset". Se observarmos mais 
 #| warning: false
 
 grafo %>% 
-  filter(Community %in% c(1, 2, 5)) %>% 
+  filter(Community %in% c(1, 2, 3)) %>% 
 
   ggraph(layout = "kk") + 
   
@@ -1224,9 +1239,6 @@ Vamos usar o geom `geom_node_label` no lugar de `geom_node_text` para ter um fun
 ggraph(grafo, layout = "kk") + 
 geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
   end_cap = label_rect(node2.name)),
-  angle_calc = "along",
-  label_size = 1,
-  label_dodge = unit(2.5, "mm"),
   arrow = arrow(length = unit(1, "mm")), 
   start_cap = circle(4, "mm"),
   end_cap = circle(4, "mm")) +
@@ -1261,9 +1273,6 @@ Vamos gerar um novo gráfico que exiba numericamente as comunidades nas labels:
 ggraph(grafo, layout = "kk") + 
   geom_edge_parallel(aes(color = edge, start_cap = label_rect(node1.name),
     end_cap = label_rect(node2.name)),
-    angle_calc = "along",
-    label_size = 1,
-    label_dodge = unit(2.5, "mm"),
     arrow = arrow(length = unit(1, "mm")), 
     start_cap = circle(4, "mm"),
     end_cap = circle(4, "mm"),
@@ -1893,9 +1902,9 @@ cluster_principal %>%
 ```{r}
 #| code-fold: true
 #| warning: false
-#| column: screen
-#| fig-width: 15
-#| fig-height: 11
+#| column: body-outset
+#| fig-width: 16
+#| fig-height: 8
 
 grafo %>% 
   filter(Community %in% c(1:2)) %>% 
@@ -1991,11 +2000,13 @@ termos %>%
 
 Para pessoas que se interessam ou trabalham com o processamento de linguagem natural, ou que precisam determinar a importância de diferentes conceitos para estudar ou ensinar sobre eles, o mapeamento de relações semânticas pode ser uma ferramenta bastante didática.
 
-Como última etapa, gostaria ainda de explorar a possibilidade de navegar interativamente por este grafo após ter mergulhado e nadado nele por algum tempo. Essa intenção surgiu após as primeiras plotagens, pois durante todo o processo muitos gráficos acabam poluídos demais pelo texto que identifica cada ponto.
+Como última etapa, gostaria ainda de explorar a possibilidade de navegar interativamente por este grafo após ter mergulhado nele por algum tempo. Essa intenção surgiu após as primeiras plotagens, pois durante todo o processo muitos gráficos acabam poluídos demais pelo texto que identifica cada ponto.
 
 Bibliotecas para visualização interativa de grafos permitem que o texto identificador apareça apenas quando interagimos com um determinado nó.
 
 ### networkD3
+
+A biblioteca [networkD3](https://github.com/christophergandrud/networkD3) usa uma estrutura de dados parecida, mas com dataframes separados para edges e nodes.
 
 ```{r}
 library(networkD3)
@@ -2003,7 +2014,7 @@ library(networkD3)
 
 #### Modelagem
 
-Cria uma estrutura para edges conforme requisitado pela biblioteca:
+Cria um dataframe para edges:
 
 ```{r}
 edges_d3 <- relacoes %>% 
@@ -2028,7 +2039,7 @@ nodes_d3 <- termos %>%
   select(id, PrefLabel, popularity, Definition)
 ```
 
-É necessário ainda diminuir todos os IDs em 1 pois a biblioteca é baseada em um framework JavaScript que usa indexação a partir de 0, ao contrário da linguagem R.
+É necessário ainda diminuir todos os IDs em 1 pois a biblioteca é baseada em um framework JavaScript que usa indexação a partir de 0, ao contrário da R.
 
 ```{r}
 nodes_d3[, 1] <- nodes_d3[, 1] - 1
@@ -2104,7 +2115,7 @@ rm(edges_d3, nodes_d3, ss_links, ss_nodes, clickScript)
 
 ### visNetwork
 
-A última biblioteca oferece a possibilidade de exibir as definições completas ao interagir com cada nó.
+A última biblioteca, [visNetwork](http://datastorm-open.github.io/visNetwork/), oferece a possibilidade de exibir as definições completas ao interagir com cada nó.
 
 ```{r}
 library(visNetwork)
@@ -2215,13 +2226,13 @@ Este formato é de difíci visualização com tantos nós inclusos. Aqui também
 
 ## 6. Agir
 
-Para pessoas interessadas na gestão de dados, a análise dessa amostra sugere que termos como **metadados**, **interoperabilidade de dados** e **proteção de dados** e são especialmente relevantes para definir outros termos.
+Para pessoas interessadas na gestão de dados, a análise dessa amostra sugere que termos como **metadados**, **interoperabilidade de dados** e **proteção de dados** são especialmente relevantes para definir outros termos.
 
-Os grupos de termos de maior destaque entre os termos mais populares são **dados pessoais**, **dados de pesquisa** e **qualidade de dados**.
+Grupos como **dados pessoais**, **dados de pesquisa**, **qualidade de dados** e **gestão de dados**, além de estarem entre os mais populares, agem como agregadores e fazem importantes pontes entre as diferentes áreas do grafo.
 
-Outros termos altamente populares não foram destacados neste último resumo acionável por terem um papel mais passivo como objetos da gestão de dados: **conjunto de dados**, **dados brutos**.
+Outros termos altamente populares não foram destacados neste último resumo acionável por terem um papel mais passivo como objetos da gestão de dados: **conjunto de dados** e **dados brutos**.
 
-Apesar de estar disponível em diferentes idiomas, o português não era uma das contempladas pelo _Multilingual Data Stewardship Terminology_. Seria possível, porém, cruzar dados de fontes compatíveis que possibilitassem um novo estudo de relações observando variações entre os idiomas.
+Apesar de estar disponível em diferentes idiomas, o português não era uma das contempladas pelo _Multilingual Data Stewardship Terminology_. Seria possível, porém, cruzar dados de fontes compatíveis que possibilitariam um novo estudo de relações observando variações entre os idiomas.
 
 ## Saiba mais
 
